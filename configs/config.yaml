@@ -1,0 +1,36 @@
+server:
+  addr: ":8080"
+
+database:
+  # Overridden by DATABASE_DSN in docker-compose; for local runs use localhost via env.
+  dsn: "postgres://expenses:expenses@localhost:5432/expenses?sslmode=disable"
+
+telegram:
+  token: ""
+  webhook_url: ""
+  webhook_path: "/telegram/webhook"
+
+llm:
+  base_url: "https://api.groq.com/openai/v1"
+  api_key: ""
+  # llama-3.3-70b-versatile снят с free/dev tier (с авг 2026); замена от Groq
+  model: "openai/gpt-oss-120b"
+  temperature: 0
+  max_tokens: 1024
+  mock: false
+  timeout_sec: 30
+  # gpt-oss думает перед ответом; low = меньше токенов и меньше 429 на free tier Groq
+  reasoning_effort: "low"
+  # сколько последних сообщений истории отправлять в LLM (хранится до 100)
+  history_window: 12
+
+admin:
+  user: "admin"
+  pass: "admin"
+
+currency:
+  byn_to_kopecks: 100
+  usd_to_byn_kopecks: 300     # 1 USD = 3.00 BYN (constant for demo)
+  rub_to_byn_kopecks: 4       # 1 RUB ≈ 0.04 BYN
+
+timezone: "Europe/Moscow"

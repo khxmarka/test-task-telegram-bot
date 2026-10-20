@@ -1,0 +1,39 @@
+# Переменные из .env в корне подставляются автоматически.
+# В контейнер .env монтируется и читается приложением (config.LoadDotEnv).
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: expenses
+      POSTGRES_PASSWORD: expenses
+      POSTGRES_DB: expenses
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U expenses -d expenses"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # DSN внутри сети compose всегда на сервис postgres (перебивает .env при необходимости)
+      DATABASE_DSN: "postgres://expenses:expenses@postgres:5432/expenses?sslmode=disable"
+      TZ: Europe/Moscow
+    volumes:
+      # приложение само читает /app/.env; файл должен существовать (cp .env.example .env)
+      - ./.env:/app/.env:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

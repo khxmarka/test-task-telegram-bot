@@ -1,0 +1,14 @@
+bin/
+dist/
+web/dist/
+web/node_modules/
+*.exe
+*.test
+.env
+.idea/
+.vscode/
+*.log
+coverage.out
+test-task-expenses.md
+cmd/app/static/*
+!cmd/app/static/.gitkeep
