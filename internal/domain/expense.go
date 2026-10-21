@@ -71,23 +71,23 @@ const (
 )
 
 type Expense struct {
-	ID                int64     `db:"id" json:"id"`
-	UserID            int64     `db:"user_id" json:"user_id"`
-	AmountBYNKopecks  int64     `db:"amount_byn_kopecks" json:"amount_byn_kopecks"`
-	Category          Category  `db:"category" json:"category"`
-	SpentAt           time.Time `db:"spent_at" json:"spent_at"`
-	Comment           string    `db:"comment" json:"comment"`
-	CreatedAt         time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt         time.Time `db:"updated_at" json:"updated_at"`
+	ID               int64     `db:"id" json:"id"`
+	UserID           int64     `db:"user_id" json:"user_id"`
+	AmountBYNKopecks int64     `db:"amount_byn_kopecks" json:"amount_byn_kopecks"`
+	Category         Category  `db:"category" json:"category"`
+	SpentAt          time.Time `db:"spent_at" json:"spent_at"`
+	Comment          string    `db:"comment" json:"comment"`
+	CreatedAt        time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt        time.Time `db:"updated_at" json:"updated_at"`
 	// Joined for admin panel.
 	UserDisplayName string `db:"user_display_name" json:"user_display_name,omitempty"`
 }
 
 type ExpenseFilter struct {
-	UserID    *int64
-	Category  *Category
-	FromDate  *time.Time
-	ToDate    *time.Time
+	UserID   *int64
+	Category *Category
+	FromDate *time.Time
+	ToDate   *time.Time
 	// Query is free text matched against the comment (stemmed, case-insensitive).
 	Query  string
 	Limit  int
@@ -101,8 +101,8 @@ type CategorySummary struct {
 }
 
 type PeriodSummary struct {
-	Total  int64 `json:"total"`
-	Count  int64 `json:"count"`
-	From   string `json:"from,omitempty"`
-	To     string `json:"to,omitempty"`
+	Total int64  `json:"total"`
+	Count int64  `json:"count"`
+	From  string `json:"from,omitempty"`
+	To    string `json:"to,omitempty"`
 }

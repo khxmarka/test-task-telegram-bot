@@ -142,9 +142,13 @@ func enrichFilterArgs(args map[string]any, userText string) {
 			args["category"] = string(*hint)
 		}
 	}
-	if q, _ := args["query"].(string); strings.TrimSpace(q) == "" {
-		if leftover := ExtractCommentQuery(userText); leftover != "" {
-			args["query"] = leftover
+	// Do not invent a comment query when the model already scoped by category —
+	// otherwise «еду» sticks onto category=stores and the summary returns 0.
+	if cat, _ := args["category"].(string); strings.TrimSpace(cat) == "" {
+		if q, _ := args["query"].(string); strings.TrimSpace(q) == "" {
+			if leftover := ExtractCommentQuery(userText); leftover != "" {
+				args["query"] = leftover
+			}
 		}
 	}
 	if p, _ := args["period"].(string); strings.TrimSpace(p) == "" {

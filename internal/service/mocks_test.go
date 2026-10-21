@@ -11,9 +11,9 @@ import (
 )
 
 type mockExpenseRepo struct {
-	mu       sync.Mutex
-	nextID   int64
-	items    map[int64]*domain.Expense
+	mu     sync.Mutex
+	nextID int64
+	items  map[int64]*domain.Expense
 }
 
 func newMockExpenseRepo() *mockExpenseRepo {
@@ -62,6 +62,16 @@ func (m *mockExpenseRepo) Delete(ctx context.Context, id, userID int64) error {
 	defer m.mu.Unlock()
 	e, ok := m.items[id]
 	if !ok || e.UserID != userID {
+		return errorsx.ErrNotFound
+	}
+	delete(m.items, id)
+	return nil
+}
+
+func (m *mockExpenseRepo) DeleteByID(ctx context.Context, id int64) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, ok := m.items[id]; !ok {
 		return errorsx.ErrNotFound
 	}
 	delete(m.items, id)

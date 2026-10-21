@@ -35,6 +35,15 @@ export type Filters = {
   to?: string;
 };
 
+export type ExpenseWrite = {
+  user_id: number;
+  amount: number;
+  currency?: string;
+  category: string;
+  spent_at: string;
+  comment: string;
+};
+
 function authHeader(user: string, pass: string) {
   return "Basic " + btoa(`${user}:${pass}`);
 }
@@ -56,6 +65,28 @@ async function apiGet<T>(path: string, user: string, pass: string, filters?: Fil
   return res.json();
 }
 
+async function apiJSON<T>(
+  method: string,
+  path: string,
+  user: string,
+  pass: string,
+  body?: unknown
+): Promise<T> {
+  const res = await fetch(`/api/v1${path}`, {
+    method,
+    headers: {
+      Authorization: authHeader(user, pass),
+      "Content-Type": "application/json",
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(errBody.message || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
 export const fetchMembers = (u: string, p: string) =>
   apiGet<{ items: User[] }>("/members", u, p).then((r) => r.items);
 
@@ -67,6 +98,15 @@ export const fetchSummary = (u: string, p: string, f: Filters) =>
 
 export const fetchByCategory = (u: string, p: string, f: Filters) =>
   apiGet<{ items: CategorySummary[] }>("/expenses/by-category", u, p, f).then((r) => r.items);
+
+export const createExpense = (u: string, p: string, data: ExpenseWrite) =>
+  apiJSON<Expense>("POST", "/expenses", u, p, { ...data, currency: data.currency || "BYN" });
+
+export const updateExpense = (u: string, p: string, id: number, data: ExpenseWrite) =>
+  apiJSON<Expense>("PATCH", `/expenses/${id}`, u, p, { ...data, currency: data.currency || "BYN" });
+
+export const deleteExpense = (u: string, p: string, id: number) =>
+  apiJSON<{ status: string }>("DELETE", `/expenses/${id}`, u, p);
 
 export function formatBYN(kopecks: number) {
   return `${(kopecks / 100).toFixed(2)} BYN`;

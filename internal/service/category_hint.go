@@ -55,8 +55,10 @@ var categoryLexicon = []struct {
 	}},
 	{domain.CategoryStores, []string{
 		"магазин", "продукт", "grocery", "store", "супермаркет", "евроопт", "магнит", "пятерочк",
+		// Category synonyms (not product comments): «на еду» → stores filter, not query=еду.
+		"еда", "еду", "едой", "еде", "food", "foods",
 	}, []string{
-		"еда", "food", "хлеб", "молоко", "овощ", "фрукт",
+		"хлеб", "молоко", "овощ", "фрукт",
 	}},
 }
 
@@ -96,7 +98,7 @@ func NamedCategory(text string) *domain.Category {
 	return nil
 }
 
-// IsNamedCategoryToken is true for enum codes and name fragments («жилье», «такси»).
+// IsNamedCategoryToken is true for enum codes and name fragments («жилье», «такси», «еду»).
 func IsNamedCategoryToken(tok string) bool {
 	t := foldYo(tok)
 	for _, c := range domain.OrderedCategories {
@@ -110,7 +112,8 @@ func IsNamedCategoryToken(tok string) bool {
 			if t == key {
 				return true
 			}
-			if len(key) >= 4 && strings.HasPrefix(t, key) {
+			// Prefix only for longer stems so «жила» ≠ «жилье».
+			if len([]rune(key)) >= 4 && strings.HasPrefix(t, key) {
 				return true
 			}
 		}

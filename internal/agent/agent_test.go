@@ -55,6 +55,10 @@ func (f *fakeExpRepo) Delete(ctx context.Context, id, userID int64) error {
 	delete(f.items, id)
 	return nil
 }
+func (f *fakeExpRepo) DeleteByID(ctx context.Context, id int64) error {
+	delete(f.items, id)
+	return nil
+}
 func (f *fakeExpRepo) matches(e *domain.Expense, filter domain.ExpenseFilter) bool {
 	if filter.UserID != nil && e.UserID != *filter.UserID {
 		return false

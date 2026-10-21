@@ -1,23 +1,47 @@
 package agent
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 )
 
 func TestExtractCommentQuery(t *testing.T) {
 	tests := map[string]string{
-		"сколько потрачено на ноги": "ноги",
-		"сколько потрачено на Нож?": "нож",
-		"траты на ход ноги":         "ход ноги",
-		"сколько ушло на жилье вчера": "",
-		"траты на такси":            "",
+		"сколько потрачено на ноги":             "ноги",
+		"сколько потрачено на Нож?":             "нож",
+		"траты на ход ноги":                     "ход ноги",
+		"сколько ушло на жилье вчера":           "",
+		"траты на такси":                        "",
+		"сколько потратил на еду в этом месяце": "",
+		"сколько ушло на food":                  "",
 	}
 	for in, want := range tests {
 		got := ExtractCommentQuery(in)
 		if got != want {
 			t.Fatalf("%q: got %q want %q", in, got, want)
 		}
+	}
+}
+
+func TestEnrichCallsFromTextFoodMonth(t *testing.T) {
+	calls := []ToolCall{{
+		Function: ToolCallFunction{
+			Name:      ToolGetSummary,
+			Arguments: `{"category":"stores","period":"month"}`,
+		},
+	}}
+	enrichCallsFromText(calls, "сколько потратил на еду в этом месяце")
+	var args map[string]any
+	if err := json.Unmarshal([]byte(calls[0].Function.Arguments), &args); err != nil {
+		t.Fatal(err)
+	}
+	if q, _ := args["query"].(string); strings.TrimSpace(q) != "" {
+		t.Fatalf("expected empty query, got %q args=%v", q, args)
+	}
+	if args["category"] != "stores" {
+		t.Fatalf("category=%v", args["category"])
 	}
 }
 

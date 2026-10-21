@@ -19,6 +19,7 @@ type ExpenseRepository interface {
 	GetByID(ctx context.Context, id int64) (*domain.Expense, error)
 	Update(ctx context.Context, e *domain.Expense) error
 	Delete(ctx context.Context, id, userID int64) error
+	DeleteByID(ctx context.Context, id int64) error
 	List(ctx context.Context, f domain.ExpenseFilter) ([]domain.Expense, error)
 	Count(ctx context.Context, f domain.ExpenseFilter) (int64, error)
 	GetLastByUser(ctx context.Context, userID int64) (*domain.Expense, error)
@@ -77,6 +78,18 @@ func (r *expenseRepo) Delete(ctx context.Context, id, userID int64) error {
 	res, err := r.db.ExecContext(ctx, `DELETE FROM expenses WHERE id = $1 AND user_id = $2`, id, userID)
 	if err != nil {
 		return fmt.Errorf("delete expense: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return errorsx.ErrNotFound
+	}
+	return nil
+}
+
+func (r *expenseRepo) DeleteByID(ctx context.Context, id int64) error {
+	res, err := r.db.ExecContext(ctx, `DELETE FROM expenses WHERE id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("delete expense by id: %w", err)
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {

@@ -115,4 +115,3 @@ func (r *userRepo) ListMembers(ctx context.Context) ([]domain.User, error) {
 	}
 	return users, nil
 }
-

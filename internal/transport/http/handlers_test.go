@@ -1,15 +1,19 @@
 package httpapi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/testTelegramApp/expenses-bot/internal/config"
 	"github.com/testTelegramApp/expenses-bot/internal/domain"
 	"github.com/testTelegramApp/expenses-bot/internal/errorsx"
 	"github.com/testTelegramApp/expenses-bot/internal/service"
@@ -19,12 +23,41 @@ type stubExpRepo struct {
 	items []domain.Expense
 }
 
-func (s *stubExpRepo) Create(ctx context.Context, e *domain.Expense) error { return nil }
+func (s *stubExpRepo) Create(ctx context.Context, e *domain.Expense) error {
+	e.ID = int64(len(s.items) + 1)
+	e.CreatedAt = time.Now().UTC()
+	e.UpdatedAt = e.CreatedAt
+	s.items = append(s.items, *e)
+	return nil
+}
 func (s *stubExpRepo) GetByID(ctx context.Context, id int64) (*domain.Expense, error) {
+	for i := range s.items {
+		if s.items[i].ID == id {
+			cp := s.items[i]
+			return &cp, nil
+		}
+	}
 	return nil, errorsx.ErrNotFound
 }
-func (s *stubExpRepo) Update(ctx context.Context, e *domain.Expense) error { return nil }
-func (s *stubExpRepo) Delete(ctx context.Context, id, userID int64) error  { return nil }
+func (s *stubExpRepo) Update(ctx context.Context, e *domain.Expense) error {
+	for i := range s.items {
+		if s.items[i].ID == e.ID {
+			s.items[i] = *e
+			return nil
+		}
+	}
+	return errorsx.ErrNotFound
+}
+func (s *stubExpRepo) Delete(ctx context.Context, id, userID int64) error { return nil }
+func (s *stubExpRepo) DeleteByID(ctx context.Context, id int64) error {
+	for i, e := range s.items {
+		if e.ID == id {
+			s.items = append(s.items[:i], s.items[i+1:]...)
+			return nil
+		}
+	}
+	return errorsx.ErrNotFound
+}
 func (s *stubExpRepo) match(e domain.Expense, f domain.ExpenseFilter) bool {
 	if f.UserID != nil && e.UserID != *f.UserID {
 		return false
@@ -118,7 +151,7 @@ func setupRouter() http.Handler {
 		},
 	}}
 	svc := service.NewExpenseService(exp, &stubUserRepo{}, time.UTC)
-	api := &API{Expenses: svc, Loc: time.UTC}
+	api := &API{Expenses: svc, Loc: time.UTC, Rates: config.CurrencyConfig{BYNToKopecks: 100}}
 	r := chi.NewRouter()
 	r.Use(CORS)
 	r.Get("/healthz", Healthz)
@@ -235,5 +268,73 @@ func TestSummaryAndPieHonorMemberAndCategory(t *testing.T) {
 	}
 	if len(body.Items) != 1 || body.Items[0].Category != domain.CategoryTransport || body.Items[0].Total != 10000 {
 		t.Fatalf("pie %+v", body.Items)
+	}
+}
+
+func TestCreateUpdateDeleteExpense(t *testing.T) {
+	h := setupRouter()
+
+	createBody := `{"user_id":1,"amount":12.5,"currency":"BYN","category":"cafes","spent_at":"2026-10-10","comment":"tea"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/expenses", strings.NewReader(createBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth("admin", "secret")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("create status %d body %s", rr.Code, rr.Body.String())
+	}
+	var created domain.Expense
+	if err := json.Unmarshal(rr.Body.Bytes(), &created); err != nil {
+		t.Fatal(err)
+	}
+	if created.ID == 0 || created.AmountBYNKopecks != 1250 {
+		t.Fatalf("created %+v", created)
+	}
+
+	patch := `{"amount":15,"currency":"BYN","category":"stores","spent_at":"2026-10-11","comment":"tea+"}`
+	req = httptest.NewRequest(http.MethodPatch, "/api/v1/expenses/"+strconv.FormatInt(created.ID, 10), bytes.NewBufferString(patch))
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth("admin", "secret")
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if rr.Code != 200 {
+		t.Fatalf("patch status %d body %s", rr.Code, rr.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodDelete, "/api/v1/expenses/"+strconv.FormatInt(created.ID, 10), nil)
+	req.SetBasicAuth("admin", "secret")
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if rr.Code != 200 {
+		t.Fatalf("delete status %d body %s", rr.Code, rr.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodDelete, "/api/v1/expenses/99999", nil)
+	req.SetBasicAuth("admin", "secret")
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("delete missing status %d", rr.Code)
+	}
+}
+
+func TestCreateValidation(t *testing.T) {
+	h := setupRouter()
+	cases := []struct {
+		body string
+	}{
+		{`{"user_id":0,"amount":10,"category":"cafes"}`},
+		{`{"user_id":1,"amount":-1,"category":"cafes"}`},
+		{`{"user_id":1,"amount":10,"category":"food"}`},
+	}
+	for _, tc := range cases {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/expenses", strings.NewReader(tc.body))
+		req.Header.Set("Content-Type", "application/json")
+		req.SetBasicAuth("admin", "secret")
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		if rr.Code != http.StatusBadRequest {
+			t.Fatalf("body %s: status %d", tc.body, rr.Code)
+		}
 	}
 }

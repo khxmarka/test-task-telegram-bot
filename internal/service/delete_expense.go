@@ -27,6 +27,14 @@ func (s *ExpenseService) Delete(ctx context.Context, id, userID int64) error {
 	return s.expenses.Delete(ctx, id, userID)
 }
 
+// DeleteAsAdmin hard-deletes any family expense by id (panel / Basic Auth).
+func (s *ExpenseService) DeleteAsAdmin(ctx context.Context, id int64) error {
+	if id <= 0 {
+		return fmt.Errorf("%w: id required", errorsx.ErrValidation)
+	}
+	return s.expenses.DeleteByID(ctx, id)
+}
+
 // FindForBulkDelete returns one page of the user's own expenses matching f.
 func (s *ExpenseService) FindForBulkDelete(ctx context.Context, userID int64, f domain.ExpenseFilter) ([]domain.Expense, error) {
 	if userID <= 0 {

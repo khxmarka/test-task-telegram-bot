@@ -17,7 +17,7 @@ import (
 
 type pendingBulk struct {
 	userID int64
-	ids    []int64            // explicit ids (e.g. «удали 1 и 4»)
+	ids    []int64               // explicit ids (e.g. «удали 1 и 4»)
 	filter *domain.ExpenseFilter // own rows matching filter; nil = use ids
 	count  int64
 	total  int64
@@ -100,16 +100,12 @@ func (a *Agent) HandleMessage(ctx context.Context, chatID int64, text string, tc
 		return HandleResult{Reply: reply}
 	}
 
-	if LooksLikeBulkDeleteOwn(text) {
-		reply, _ := a.execDeleteExpenses(ctx, chatID, map[string]any{"all": true}, tc)
-		a.remember(chatID, text, reply)
-		return HandleResult{Reply: reply}
-	}
-
+	// Off-topic stays pre-LLM: bot must not chat about anything outside family expenses.
 	if IsAppOffTopic(text) {
 		return HandleResult{Reply: OffTopicRefusal(tc.Language)}
 	}
 
+	// Explicit numeric ids («удали 1 и 2») — deterministic confirm flow, no LLM needed.
 	if ids := ParseDeleteIDs(text); len(ids) > 0 {
 		reply := a.deleteByIDs(ctx, chatID, ids, tc)
 		a.remember(chatID, text, reply)
@@ -526,26 +522,9 @@ func (a *Agent) execUpdate(ctx context.Context, args map[string]any, tc TrustedC
 				c = code
 			}
 			cur, _ = service.ParseCurrency(c)
-		}
-		if q, ok := args["query"].(string); ok {
-			if inferred := InferCurrency(q); inferred != domain.CurrencyBYN || strings.Contains(strings.ToLower(q), "byn") || strings.Contains(strings.ToLower(q), "бел") {
-				cur = inferred
-			}
-			if p := ParseSimpleCreate(q); p.OK {
-				if nums := amountRe.FindAllStringSubmatch(q, -1); len(nums) >= 2 {
-					last := strings.ReplaceAll(nums[len(nums)-1][1], ",", ".")
-					var parsed float64
-					fmt.Sscanf(last, "%f", &parsed)
-					if parsed > 0 {
-						amt = parsed
-					}
-				} else {
-					amt = p.Amount
-					cur = p.Currency
-				}
-			} else if InferCurrency(q) == domain.CurrencyRUB {
-				cur = domain.CurrencyRUB
-			}
+		} else if q, ok := args["query"].(string); ok {
+			// Only infer currency from query when the model omitted it — never override amount.
+			cur = InferCurrency(q)
 		}
 		k, err := service.ToBYNKopecks(amt, cur, a.rates)
 		if err != nil {

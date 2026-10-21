@@ -28,9 +28,6 @@ services:
       # DSN внутри сети compose всегда на сервис postgres (перебивает .env при необходимости)
       DATABASE_DSN: "postgres://expenses:expenses@postgres:5432/expenses?sslmode=disable"
       TZ: Europe/Moscow
-    volumes:
-      # приложение само читает /app/.env; файл должен существовать (cp .env.example .env)
-      - ./.env:/app/.env:ro
     depends_on:
       postgres:
         condition: service_healthy

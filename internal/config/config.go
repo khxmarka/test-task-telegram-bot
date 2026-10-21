@@ -11,13 +11,13 @@ import (
 )
 
 type Config struct {
-	Server    ServerConfig    `yaml:"server"`
-	Database  DatabaseConfig  `yaml:"database"`
-	Telegram  TelegramConfig  `yaml:"telegram"`
-	LLM       LLMConfig       `yaml:"llm"`
-	Admin     AdminConfig     `yaml:"admin"`
-	Currency  CurrencyConfig  `yaml:"currency"`
-	Timezone  string          `yaml:"timezone"`
+	Server   ServerConfig   `yaml:"server"`
+	Database DatabaseConfig `yaml:"database"`
+	Telegram TelegramConfig `yaml:"telegram"`
+	LLM      LLMConfig      `yaml:"llm"`
+	Admin    AdminConfig    `yaml:"admin"`
+	Currency CurrencyConfig `yaml:"currency"`
+	Timezone string         `yaml:"timezone"`
 }
 
 type ServerConfig struct {
@@ -29,19 +29,19 @@ type DatabaseConfig struct {
 }
 
 type TelegramConfig struct {
-	Token      string `yaml:"token"`
-	WebhookURL string `yaml:"webhook_url"`
+	Token       string `yaml:"token"`
+	WebhookURL  string `yaml:"webhook_url"`
 	WebhookPath string `yaml:"webhook_path"`
 }
 
 type LLMConfig struct {
-	BaseURL    string  `yaml:"base_url"`
-	APIKey     string  `yaml:"api_key"`
-	Model      string  `yaml:"model"`
+	BaseURL     string  `yaml:"base_url"`
+	APIKey      string  `yaml:"api_key"`
+	Model       string  `yaml:"model"`
 	Temperature float64 `yaml:"temperature"`
-	MaxTokens  int     `yaml:"max_tokens"`
-	Mock       bool    `yaml:"mock"`
-	TimeoutSec int     `yaml:"timeout_sec"`
+	MaxTokens   int     `yaml:"max_tokens"`
+	Mock        bool    `yaml:"mock"`
+	TimeoutSec  int     `yaml:"timeout_sec"`
 	// ReasoningEffort is sent only for reasoning models (gpt-oss): low keeps tokens/TPM down.
 	ReasoningEffort string `yaml:"reasoning_effort"`
 	// HistoryWindow is how many stored history messages are sent to the LLM per request.
@@ -56,7 +56,7 @@ type AdminConfig struct {
 // Rates: how many BYN kopecks for 1 unit of foreign currency (or 1 BYN).
 // Example: USD = 32000 means 1 USD = 320.00 BYN.
 type CurrencyConfig struct {
-	BYNToKopecks int64 `yaml:"byn_to_kopecks"` // always 100
+	BYNToKopecks    int64 `yaml:"byn_to_kopecks"` // always 100
 	USDToBYNKopecks int64 `yaml:"usd_to_byn_kopecks"`
 	RUBToBYNKopecks int64 `yaml:"rub_to_byn_kopecks"`
 }
@@ -96,12 +96,12 @@ func defaults() *Config {
 			WebhookPath: "/telegram/webhook",
 		},
 		LLM: LLMConfig{
-			BaseURL:     "https://api.groq.com/openai/v1",
-			Model:       "openai/gpt-oss-120b",
-			Temperature: 0,
-			MaxTokens:   1024,
-			Mock:        false,
-			TimeoutSec:  30,
+			BaseURL:         "https://api.groq.com/openai/v1",
+			Model:           "openai/gpt-oss-120b",
+			Temperature:     0,
+			MaxTokens:       1024,
+			Mock:            false,
+			TimeoutSec:      30,
 			ReasoningEffort: "low",
 			HistoryWindow:   12,
 		},

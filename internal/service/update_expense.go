@@ -29,6 +29,22 @@ func (s *ExpenseService) Update(ctx context.Context, in UpdateExpenseInput) (*do
 	if e.UserID != in.UserID {
 		return nil, errorsx.ErrForbidden
 	}
+	return s.applyUpdate(ctx, e, in)
+}
+
+// UpdateAsAdmin patches any family expense; owner transfer is forbidden.
+func (s *ExpenseService) UpdateAsAdmin(ctx context.Context, in UpdateExpenseInput) (*domain.Expense, error) {
+	if in.ID <= 0 {
+		return nil, fmt.Errorf("%w: id required", errorsx.ErrValidation)
+	}
+	e, err := s.expenses.GetByID(ctx, in.ID)
+	if err != nil {
+		return nil, err
+	}
+	return s.applyUpdate(ctx, e, in)
+}
+
+func (s *ExpenseService) applyUpdate(ctx context.Context, e *domain.Expense, in UpdateExpenseInput) (*domain.Expense, error) {
 	if in.AmountBYNKopecks != nil {
 		if *in.AmountBYNKopecks <= 0 {
 			return nil, fmt.Errorf("%w: amount must be > 0", errorsx.ErrValidation)

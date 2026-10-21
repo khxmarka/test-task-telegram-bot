@@ -34,7 +34,7 @@ var periodEnum = []string{"today", "yesterday", "week", "last_week", "month", "l
 func filterProps() map[string]any {
 	return map[string]any{
 		"category": map[string]any{"type": "string", "enum": categoryEnums(), "description": "Only this category"},
-		"query": map[string]any{"type": "string", "description": "Word(s) to search in expense comments, e.g. 'ноги', 'нож', 'лего'. Use when the user names a thing, not a category."},
+		"query":    map[string]any{"type": "string", "description": "Word(s) to search in expense comments, e.g. 'ноги', 'нож', 'лего'. Use when the user names a thing, not a category."},
 		"period":   map[string]any{"type": "string", "enum": periodEnum},
 		"from":     map[string]any{"type": "string", "description": "YYYY-MM-DD, inclusive"},
 		"to":       map[string]any{"type": "string", "description": "YYYY-MM-DD, inclusive"},

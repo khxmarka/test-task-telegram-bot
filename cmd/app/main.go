@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/jmoiron/sqlx"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
 	"github.com/pressly/goose/v3"
 	"go.uber.org/zap"
 
@@ -65,9 +65,11 @@ func main() {
 	expSvc := service.NewExpenseService(expRepo, userRepo, loc)
 
 	var llm agent.LLMClient
-	if cfg.LLM.Mock || cfg.LLM.APIKey == "" {
-		log.Info("using mock LLM")
+	if cfg.LLM.Mock {
+		log.Info("using mock LLM (LLM_MOCK=true)")
 		llm = agent.NewMockLLM()
+	} else if cfg.LLM.APIKey == "" {
+		log.Fatal("LLM_API_KEY is empty; set a key or LLM_MOCK=true")
 	} else {
 		timeout := time.Duration(cfg.LLM.TimeoutSec) * time.Second
 		if timeout <= 0 {
@@ -85,7 +87,7 @@ func main() {
 
 	r.Get("/healthz", httpapi.Healthz)
 
-	api := &httpapi.API{Expenses: expSvc, Loc: loc}
+	api := &httpapi.API{Expenses: expSvc, Rates: cfg.Currency, Loc: loc}
 	r.Route("/api/v1", func(ar chi.Router) {
 		ar.Use(httpapi.BasicAuth(cfg.Admin.User, cfg.Admin.Pass))
 		api.Routes(ar)
